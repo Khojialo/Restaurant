@@ -6,12 +6,27 @@ from .models import (
 )
 
 
+
+class ReviewMiniSerializer(serializers.ModelSerializer):
+    """Restaurant ichida review larni soddalashtirilgan holda ko‘rsatish uchun"""
+    customer_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = ['id', 'rating', 'comment', 'customer_name', 'created_at']
+
+    def get_customer_name(self, obj):
+        return obj.customer.full_name if obj.customer else None
+
+
 class RestaurantSerializer(serializers.ModelSerializer):
+    reviews = ReviewMiniSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Restaurant
         fields = '__all__'
+        depth = 1
 
     def get_average_rating(self, obj):
         reviews = obj.reviews.all()
@@ -21,33 +36,28 @@ class RestaurantSerializer(serializers.ModelSerializer):
 
 
 class MenuSerializer(serializers.ModelSerializer):
-    restaurant_name = serializers.SerializerMethodField()
+    restaurant = RestaurantSerializer(read_only=True)
+    restaurant_id = serializers.PrimaryKeyRelatedField(
+        source="restaurant", queryset=Restaurant.objects.all(), write_only=True
+    )
 
     class Meta:
         model = Menu
         fields = '__all__'
 
-    def get_restaurant_name(self, obj):
-        return obj.restaurant.name if obj.restaurant else None
-
 
 class DishSerializer(serializers.ModelSerializer):
-    menu_name = serializers.SerializerMethodField()
-    restaurant_name = serializers.SerializerMethodField()
+    menu = MenuSerializer(read_only=True)
+    menu_id = serializers.PrimaryKeyRelatedField(
+        source="menu", queryset=Menu.objects.all(), write_only=True
+    )
 
     class Meta:
         model = Dish
         fields = [
             'id', 'name', 'description', 'category', 'price',
-            'is_available', 'prep_time_minutes', 'menu',
-            'menu_name', 'restaurant_name',
+            'is_available', 'prep_time_minutes', 'menu', 'menu_id'
         ]
-
-    def get_menu_name(self, obj):
-        return obj.menu.name if obj.menu else None
-
-    def get_restaurant_name(self, obj):
-        return obj.menu.restaurant.name if obj.menu and obj.menu.restaurant else None
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -73,8 +83,11 @@ class DriverSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    dish = DishSerializer(read_only=True)
+    dish_id = serializers.PrimaryKeyRelatedField(
+        source="dish", queryset=Dish.objects.all(), write_only=True
+    )
     total_price = serializers.SerializerMethodField()
-    dish_name = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
@@ -83,31 +96,38 @@ class OrderItemSerializer(serializers.ModelSerializer):
     def get_total_price(self, obj):
         return obj.quantity * obj.dish.price if obj.dish else 0
 
-    def get_dish_name(self, obj):
-        return obj.dish.name if obj.dish else None
-
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    customer = CustomerSerializer(read_only=True)
+    customer_id = serializers.PrimaryKeyRelatedField(
+        source="customer", queryset=Customer.objects.all(), write_only=True
+    )
+    restaurant = RestaurantSerializer(read_only=True)
+    restaurant_id = serializers.PrimaryKeyRelatedField(
+        source="restaurant", queryset=Restaurant.objects.all(), write_only=True
+    )
+    driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        source="driver", queryset=Driver.objects.all(), write_only=True
+    )
     calculated_total = serializers.SerializerMethodField()
-    customer_name = serializers.SerializerMethodField()
-    restaurant_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = '__all__'
+        depth = 1
+
 
     def get_calculated_total(self, obj):
         return sum(item.quantity * item.dish.price for item in obj.items.all())
 
-    def get_customer_name(self, obj):
-        return obj.customer.full_name if obj.customer else None
-
-    def get_restaurant_name(self, obj):
-        return obj.restaurant.name if obj.restaurant else None
-
 
 class PaymentSerializer(serializers.ModelSerializer):
+    order = OrderSerializer(read_only=True)
+    order_id = serializers.PrimaryKeyRelatedField(
+        source="order", queryset=Order.objects.all(), write_only=True
+    )
     status_display = serializers.SerializerMethodField()
 
     class Meta:
@@ -119,26 +139,30 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 
 class DeliverySerializer(serializers.ModelSerializer):
-    driver_name = serializers.SerializerMethodField()
+    driver = DriverSerializer(read_only=True)
+    driver_id = serializers.PrimaryKeyRelatedField(
+        source="driver", queryset=Driver.objects.all(), write_only=True
+    )
+    order = OrderSerializer(read_only=True)
+    order_id = serializers.PrimaryKeyRelatedField(
+        source="order", queryset=Order.objects.all(), write_only=True
+    )
 
     class Meta:
         model = Delivery
         fields = '__all__'
 
-    def get_driver_name(self, obj):
-        return obj.driver.full_name if obj.driver else None
-
 
 class ReviewSerializer(serializers.ModelSerializer):
-    customer_name = serializers.SerializerMethodField()
-    restaurant_name = serializers.SerializerMethodField()
+    customer = CustomerSerializer(read_only=True)
+    customer_id = serializers.PrimaryKeyRelatedField(
+        source="customer", queryset=Customer.objects.all(), write_only=True
+    )
+    restaurant = RestaurantSerializer(read_only=True)
+    restaurant_id = serializers.PrimaryKeyRelatedField(
+        source="restaurant", queryset=Restaurant.objects.all(), write_only=True
+    )
 
     class Meta:
         model = Review
         fields = '__all__'
-
-    def get_customer_name(self, obj):
-        return obj.customer.full_name if obj.customer else None
-
-    def get_restaurant_name(self, obj):
-        return obj.restaurant.name if obj.restaurant else None
