@@ -14,7 +14,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_average_rating(self, obj):
-        reviews = obj.review_set.all()
+        reviews = obj.reviews.all()
         if reviews.exists():
             return round(sum(r.rating for r in reviews) / reviews.count(), 2)
         return None
@@ -37,7 +37,11 @@ class DishSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Dish
-        fields = '__all__'
+        fields = [
+            'id', 'name', 'description', 'category', 'price',
+            'is_available', 'prep_time_minutes', 'menu',
+            'menu_name', 'restaurant_name',
+        ]
 
     def get_menu_name(self, obj):
         return obj.menu.name if obj.menu else None
@@ -47,25 +51,25 @@ class DishSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
-        fields = '__all__'
+        fields = [
+            'id', 'full_name', 'email', 'phone', 'user', 'user_full_name',
+            'created_at', 'updated_at',
+        ]
 
-    def get_full_name(self, obj):
-        return f"{obj.first_name} {obj.last_name}"
+    def get_user_full_name(self, obj):
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}".strip()
+        return None
 
 
 class DriverSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
-
     class Meta:
         model = Driver
         fields = '__all__'
-
-    def get_full_name(self, obj):
-        return f"{obj.first_name} {obj.last_name}"
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -97,7 +101,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return sum(item.quantity * item.dish.price for item in obj.items.all())
 
     def get_customer_name(self, obj):
-        return obj.customer.name if obj.customer else None
+        return obj.customer.full_name if obj.customer else None
 
     def get_restaurant_name(self, obj):
         return obj.restaurant.name if obj.restaurant else None
@@ -122,7 +126,7 @@ class DeliverySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_driver_name(self, obj):
-        return f"{obj.driver.first_name} {obj.driver.last_name}" if obj.driver else None
+        return obj.driver.full_name if obj.driver else None
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -134,7 +138,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_customer_name(self, obj):
-        return obj.customer.name if obj.customer else None
+        return obj.customer.full_name if obj.customer else None
 
     def get_restaurant_name(self, obj):
         return obj.restaurant.name if obj.restaurant else None
