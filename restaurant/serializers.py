@@ -22,10 +22,12 @@ class ReviewMiniSerializer(serializers.ModelSerializer):
 class RestaurantSerializer(serializers.ModelSerializer):
     reviews = ReviewMiniSerializer(many=True, read_only=True)
     average_rating = serializers.SerializerMethodField()
+    likes_data = serializers.SerializerMethodField()
+    comments_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Restaurant
-        fields = '__all__'
+        fields = ['id','name','description','address','phone','email','is_active','created_at','updated_at','average_rating','likes_data','comments_count','reviews',]
         depth = 1
 
     def get_average_rating(self, obj):
@@ -33,6 +35,14 @@ class RestaurantSerializer(serializers.ModelSerializer):
         if reviews.exists():
             return round(sum(r.rating for r in reviews) / reviews.count(), 2)
         return None
+
+    def get_likes_data(self, instance):
+        likes = instance.likes.count()
+        dislikes = 0
+        return {'likes': likes, 'dislikes': dislikes}
+
+    def get_comments_count(self, instance):
+        return instance.comments.count()
 
 
 class MenuSerializer(serializers.ModelSerializer):

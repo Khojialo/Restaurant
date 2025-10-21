@@ -21,6 +21,36 @@ class Restaurant(models.Model):
     def __str__(self):
         return self.name
 
+from django.db.models import Count
+
+class RestaurantLike(models.Model):
+    restaurant = models.ForeignKey('Restaurant',on_delete=models.CASCADE,related_name='likes',verbose_name="Restoran")
+    customer = models.ForeignKey('Customer',on_delete=models.CASCADE,related_name='restaurant_likes',verbose_name="Mijoz")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Qo‘shilgan vaqt")
+
+    class Meta:
+        verbose_name = "Restoran layki"
+        verbose_name_plural = "Restoranlar layklari"
+        unique_together = ('restaurant', 'customer')
+
+    def __str__(self):
+        return f"{self.customer.full_name} → {self.restaurant.name}"
+
+
+class RestaurantComment(models.Model):
+    restaurant = models.ForeignKey('Restaurant',on_delete=models.CASCADE,related_name='comments',verbose_name="Restoran")
+    customer = models.ForeignKey('Customer',on_delete=models.CASCADE,related_name='restaurant_comments',verbose_name="Mijoz")
+    text = models.TextField(verbose_name="Izoh")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Yozilgan vaqt")
+
+    class Meta:
+        verbose_name = "Restoran izohi"
+        verbose_name_plural = "Restoranlar izohlar"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.customer.full_name}: {self.text[:30]}..."
+
 
 class Menu(models.Model):
     name = models.CharField(max_length=255, verbose_name="Menyu nomi")
