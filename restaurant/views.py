@@ -1,4 +1,8 @@
-from rest_framework import viewsets, filters, permissions
+from rest_framework import viewsets, permissions,filters
+from django_filters.rest_framework import DjangoFilterBackend
+
+
+
 from .models import (
     Restaurant, Menu, Dish,
     Customer, Driver, Order, OrderItem,
@@ -14,7 +18,8 @@ from .serializers import (
 class RestaurantViewSet(viewsets.ModelViewSet):
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter,filters.OrderingFilter]
+    filterset_fields = ['name']
     search_fields = ['name', 'address', 'phone']
     ordering_fields = ['name', 'created_at']
     permission_classes = [permissions.AllowAny]
@@ -31,7 +36,8 @@ class MenuViewSet(viewsets.ModelViewSet):
 class DishViewSet(viewsets.ModelViewSet):
     queryset = Dish.objects.all()
     serializer_class = DishSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [DjangoFilterBackend,filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['name']
     search_fields = ['name', 'category', 'menu__restaurant__name']
     ordering_fields = ['price', 'name']
     permission_classes = [permissions.AllowAny]
