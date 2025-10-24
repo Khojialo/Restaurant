@@ -22,7 +22,7 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     filterset_fields = ['name']
     search_fields = ['name', 'address', 'phone']
     ordering_fields = ['name', 'created_at']
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 
 class MenuViewSet(viewsets.ModelViewSet):
